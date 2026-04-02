@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Turnos VCR">
+<meta name="theme-color" content="#080e1c">
+<title>Turnos VCR · Abril 2026</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  html, body {
+    background: #080e1c;
+    color: #e2e8f0;
+    font-family: 'Trebuchet MS', sans-serif;
+    min-height: 100%;
+  }
+  #app {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 20px 14px 60px;
+  }
+
+  /* HEADER */
+  .header { text-align: center; margin-bottom: 22px; }
+  .header .label { font-size: 10px; letter-spacing: 5px; color: #334155; text-transform: uppercase; margin-bottom: 4px; }
+  .header .vcr {
+    font-size: 44px; font-weight: 900; letter-spacing: 6px;
+    background: linear-gradient(130deg, #38bdf8 0%, #e879f9 100%);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  }
+  .header .sub { font-size: 10px; color: #1e293b; letter-spacing: 3px; margin-top: 2px; }
+
+  /* CALENDAR */
+  .cal { width: 100%; max-width: 430px; }
+  .dow-row { display: grid; grid-template-columns: repeat(7,1fr); margin-bottom: 8px; }
+  .dow-cell { text-align: center; font-size: 11px; font-weight: 700; letter-spacing: 1px; padding-bottom: 4px; color: #334155; }
+  .dow-cell.weekend { color: #f87171; }
+  .days-grid { display: grid; grid-template-columns: repeat(7,1fr); gap: 5px; }
+
+  .day-btn {
+    background: #10192a;
+    border: 2px solid #1a2540;
+    border-radius: 14px;
+    padding: 10px 4px 9px;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    min-height: 64px;
+    transition: all 0.15s;
+    -webkit-appearance: none;
+  }
+  .day-btn.empty { background: #0a0f1e; border-color: #0a0f1e; cursor: default; }
+  .day-btn.libre-day { background: #0d1117; }
+  .day-btn.selected { background: linear-gradient(145deg,#0f2744,#180f3d); border-color: #38bdf8; box-shadow: 0 0 18px rgba(56,189,248,0.2); }
+  .day-btn.today { border-color: #e879f9; }
+  .day-btn:active:not(.empty) { transform: scale(0.96); }
+
+  .day-num { font-size: 15px; font-weight: 700; color: #cbd5e1; }
+  .day-num.free { color: #1e293b; }
+  .day-num.weekend { color: #f87171; }
+  .day-num.today-num { color: #e879f9; }
+
+  .day-bar { width: 26px; height: 5px; border-radius: 3px; }
+  .day-lf  { font-size: 8px; color: #334155; letter-spacing: 1px; }
+
+  /* DETAIL CARD */
+  .detail-card {
+    width: 100%; max-width: 430px;
+    margin-top: 16px;
+    background: #10192a;
+    border-radius: 20px;
+    border: 1px solid #1a2540;
+    overflow: hidden;
+    min-height: 150px;
+  }
+  .detail-empty {
+    padding: 40px 20px;
+    text-align: center;
+    color: #1a2540;
+    font-size: 13px;
+    letter-spacing: 1px;
+  }
+  .detail-libre {
+    padding: 30px 20px;
+    text-align: center;
+  }
+  .detail-libre .libre-icon { font-size: 36px; margin-bottom: 8px; }
+  .detail-libre .libre-title { font-size: 22px; font-weight: 700; color: #334155; }
+  .detail-libre .libre-date { font-size: 11px; color: #1e293b; margin-top: 4px; letter-spacing: 2px; }
+
+  .detail-top {
+    background: linear-gradient(90deg,#0d1525,#10192a);
+    padding: 16px 20px 12px;
+    border-bottom: 1px solid #1a2540;
+  }
+  .detail-top .det-date { font-size: 10px; color: #334155; letter-spacing: 3px; margin-bottom: 3px; }
+  .detail-top .det-horario-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .detail-top .det-horario { font-size: 30px; font-weight: 900; color: #e2e8f0; letter-spacing: 1px; }
+  .detail-top .det-turno {
+    font-size: 11px; color: #38bdf8; font-weight: 700; letter-spacing: 2px;
+    background: #0a1e35; padding: 3px 10px; border-radius: 10px;
+    border: 1px solid #1a4060;
+  }
+  .detail-body { padding: 14px 20px 20px; display: flex; flex-direction: column; gap: 10px; }
+  .detail-body .area-label { font-size: 9px; color: #334155; letter-spacing: 3px; text-transform: uppercase; margin-bottom: 2px; }
+
+  .area-block {
+    border-radius: 14px;
+    padding: 13px 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .area-block .ab-dot { width: 16px; height: 16px; border-radius: 5px; flex-shrink: 0; }
+  .area-block .ab-info { flex: 1; }
+  .area-block .ab-name { font-size: 15px; font-weight: 700; margin-bottom: 4px; }
+  .area-block .ab-bar-row { display: flex; align-items: center; gap: 8px; }
+  .area-block .ab-bar-track { flex: 1; height: 5px; border-radius: 3px; background: #1a2540; overflow: hidden; }
+  .area-block .ab-bar-fill  { height: 100%; border-radius: 3px; }
+  .area-block .ab-pct { font-size: 11px; color: #475569; min-width: 40px; }
+
+  /* LEGEND */
+  .legend {
+    width: 100%; max-width: 430px;
+    margin-top: 12px;
+    background: #10192a;
+    border-radius: 16px;
+    border: 1px solid #1a2540;
+    padding: 14px 16px;
+  }
+  .legend .leg-title { font-size: 9px; color: #334155; letter-spacing: 3px; text-transform: uppercase; margin-bottom: 10px; }
+  .legend .leg-grid  { display: grid; grid-template-columns: 1fr 1fr; gap: 7px 12px; }
+  .legend .leg-item  { display: flex; align-items: center; gap: 8px; }
+  .legend .leg-dot   { width: 12px; height: 12px; border-radius: 3px; flex-shrink: 0; }
+  .legend .leg-label { font-size: 11px; color: #475569; line-height: 1.2; }
+
+  /* INSTALL BANNER */
+  #installBanner {
+    display: none; position: fixed; bottom: 0; left: 0; right: 0;
+    background: #0f1f35; border-top: 1px solid #1a3a5c;
+    padding: 14px 20px;
+    padding-bottom: max(14px, env(safe-area-inset-bottom));
+    z-index: 999;
+  }
+  #installBanner p { font-size: 12px; color: #64a0cc; font-family: monospace; line-height: 1.6; }
+  #installBanner .close-btn { position: absolute; top: 10px; right: 16px; background: none; border: none; color: #3a5070; font-size: 18px; cursor: pointer; }
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="header">
+    <div class="label">Turnos · Abril 2026</div>
+    <div class="vcr">VCR</div>
+    <div class="sub">EQUIPO TOMA DE DATOS</div>
+  </div>
+
+  <div class="cal">
+    <div class="dow-row" id="dowRow"></div>
+    <div class="days-grid" id="daysGrid"></div>
+  </div>
+
+  <div class="detail-card" id="detailCard">
+    <div class="detail-empty">Toca un día para ver tu turno</div>
+  </div>
+
+  <div class="legend">
+    <div class="leg-title">Áreas de turno</div>
+    <div class="leg-grid" id="legendGrid"></div>
+  </div>
+</div>
+
+<div id="installBanner">
+  <button class="close-btn" onclick="document.getElementById('installBanner').style.display='none'">✕</button>
+  <p>📲 Para instalar: toca <strong>Compartir</strong> (⬆) en Safari y luego <strong>"Añadir a pantalla de inicio"</strong></p>
+</div>
+
+<script>
+const AREA_COLORS = {
+  "Handling (Escalas)":           { bg: "#7eb8e8" },
+  "Handling (Equipajes)":         { bg: "#7fe07f" },
+  "Handling (Escalas+Equipajes)": { bg: "#f7f742" },
+  "PMR Llegadas":                 { bg: "#9b59d0" },
+  "Servicios":                    { bg: "#f472d0" },
+  "Formación Escalas":            { bg: "#4a90d9" },
+  "Formación Servicios":          { bg: "#e07820" },
+  "Oficina":                      { bg: "#b0b8c1" },
+  "Almacenes":                    { bg: "#9c7070" },
+  "Servicios Salidas":            { bg: "#2236c8" },
+};
+
+function aColor(area) { return (AREA_COLORS[area] || { bg: "#334155" }).bg; }
+
+const SHIFTS = {
+  1:  { turno:"14", horario:"14:00 - 22:00", blocks:[{ area:"Servicios", horas:8 }] },
+  2:  { turno:"15", horario:"15:00 - 23:00", blocks:[{ area:"Handling (Equipajes)", horas:8 }] },
+  3:  { turno:"15", horario:"15:00 - 23:00", blocks:[{ area:"Handling (Equipajes)", horas:8 }] },
+  4:  null, 5: null,
+  6:  "libre",
+  7:  { turno:"15", horario:"15:00 - 23:00", blocks:[{ area:"Handling (Escalas)", horas:8 }] },
+  8:  { turno:"15", horario:"15:00 - 23:00", blocks:[{ area:"Servicios", horas:4 }, { area:"Servicios Salidas", horas:4 }] },
+  9:  { turno:"15", horario:"15:00 - 23:00", blocks:[{ area:"Handling (Equipajes)", horas:4 }, { area:"Servicios Salidas", horas:4 }] },
+  10: { turno:"15", horario:"15:00 - 23:00", blocks:[{ area:"Servicios Salidas", horas:8 }] },
+  11: { turno:"15", horario:"15:00 - 23:00", blocks:[{ area:"Handling (Equipajes)", horas:4 }, { area:"Servicios", horas:4 }] },
+  12: null,
+  13: { turno:"15", horario:"15:00 - 23:00", blocks:[{ area:"Servicios", horas:8 }] },
+  14: { turno:"15", horario:"15:00 - 23:00", blocks:[{ area:"Servicios", horas:8 }] },
+  15: { turno:"15", horario:"15:00 - 23:00", blocks:[{ area:"Handling (Equipajes)", horas:4 }, { area:"Servicios", horas:4 }] },
+  16: { turno:"16", horario:"16:00 - 00:00", blocks:[{ area:"Handling (Escalas+Equipajes)", horas:8 }] },
+  17: { turno:"15", horario:"15:00 - 23:00", blocks:[{ area:"Handling (Escalas)", horas:8 }] },
+  18: null, 19: null, 20: null, 21: null, 22: null, 23: null,
+  24: { turno:"15", horario:"15:00 - 23:00", blocks:[{ area:"Servicios", horas:8 }] },
+  25: { turno:"15", horario:"15:00 - 23:00", blocks:[{ area:"Handling (Equipajes)", horas:4 }, { area:"Servicios Salidas", horas:4 }] },
+  26: { turno:"16", horario:"16:00 - 00:00", blocks:[{ area:"Handling (Escalas)", horas:4 }, { area:"Handling (Escalas+Equipajes)", horas:4 }] },
+  27: null, 28: null, 29: null,
+  30: { turno:"9",  horario:"09:00 - 17:00", blocks:[{ area:"Servicios", horas:8 }] },
+};
+
+const DOW_SHORT = ["L","M","X","J","V","S","D"];
+const DOW_FULL  = ["Lunes","Martes","Miércoles","Jueves","Viernes","Sábado","Domingo"];
+const FIRST_OFFSET = 2; // April 1 2026 = Wednesday
+
+function dow(day) { return (FIRST_OFFSET + day - 1) % 7; }
+
+function barBg(s) {
+  if (!s || s === "libre") return "#1e293b";
+  if (s.blocks.length === 1) return aColor(s.blocks[0].area);
+  return `linear-gradient(90deg,${aColor(s.blocks[0].area)} 50%,${aColor(s.blocks[1].area)} 50%)`;
+}
+
+// Build DOW header
+const dowRow = document.getElementById('dowRow');
+DOW_SHORT.forEach((d, i) => {
+  const el = document.createElement('div');
+  el.className = 'dow-cell' + (i >= 5 ? ' weekend' : '');
+  el.textContent = d;
+  dowRow.appendChild(el);
+});
+
+// Build legend
+const lgGrid = document.getElementById('legendGrid');
+Object.entries(AREA_COLORS).forEach(([area, st]) => {
+  lgGrid.innerHTML += `
+    <div class="leg-item">
+      <div class="leg-dot" style="background:${st.bg}"></div>
+      <span class="leg-label">${area}</span>
+    </div>`;
+});
+
+// Today
+const now = new Date();
+const todayDay = (now.getMonth() === 3 && now.getFullYear() === 2026) ? now.getDate() : null;
+
+let selected = null;
+
+// Build days grid
+const grid = document.getElementById('daysGrid');
+
+// Empty cells before day 1
+for (let i = 0; i < FIRST_OFFSET; i++) {
+  const el = document.createElement('button');
+  el.className = 'day-btn empty';
+  el.disabled = true;
+  grid.appendChild(el);
+}
+
+for (let day = 1; day <= 30; day++) {
+  const s = SHIFTS[day];
+  const isLibre = s === "libre";
+  const isFree = !s;
+  const isToday = day === todayDay;
+  const isWeekend = dow(day) >= 5;
+
+  const btn = document.createElement('button');
+  let cls = 'day-btn';
+  if (isFree) cls += ' empty';
+  else if (isLibre) cls += ' libre-day';
+  if (isToday) cls += ' today';
+  btn.className = cls;
+  btn.dataset.day = day;
+
+  let numCls = 'day-num';
+  if (isToday) numCls += ' today-num';
+  else if (isWeekend) numCls += ' weekend';
+  else if (isFree) numCls += ' free';
+
+  let inner = `<span class="${numCls}">${day}</span>`;
+
+  if (!isFree) {
+    const bg = isLibre ? "#1a2540" : barBg(s);
+    const opacity = isLibre ? 0.4 : 1;
+    inner += `<div class="day-bar" style="background:${bg};opacity:${opacity}"></div>`;
+    if (isLibre) inner += `<span class="day-lf">LF</span>`;
+  }
+
+  btn.innerHTML = inner;
+
+  if (!isFree) {
+    btn.addEventListener('click', () => {
+      // Deselect previous
+      document.querySelectorAll('.day-btn.selected').forEach(b => {
+        b.classList.remove('selected');
+        if (parseInt(b.dataset.day) === todayDay) b.classList.add('today');
+      });
+      if (selected === day) {
+        selected = null;
+        renderDetail(null);
+      } else {
+        selected = day;
+        btn.classList.add('selected');
+        renderDetail(day);
+      }
+    });
+  }
+
+  grid.appendChild(btn);
+}
+
+// Fill remaining cells
+const total = FIRST_OFFSET + 30;
+const remainder = (7 - (total % 7)) % 7;
+for (let i = 0; i < remainder; i++) {
+  const el = document.createElement('button');
+  el.className = 'day-btn empty';
+  el.disabled = true;
+  grid.appendChild(el);
+}
+
+function renderDetail(day) {
+  const card = document.getElementById('detailCard');
+  if (!day) {
+    card.innerHTML = `<div class="detail-empty">Toca un día para ver tu turno</div>`;
+    return;
+  }
+  const s = SHIFTS[day];
+  const dowIdx = dow(day);
+  const dateStr = `${DOW_FULL[dowIdx].toUpperCase()} ${day} DE ABRIL`;
+
+  if (!s) {
+    card.innerHTML = `
+      <div class="detail-libre">
+        <div class="libre-icon">😴</div>
+        <div class="libre-title">Día libre</div>
+        <div class="libre-date">${dateStr}</div>
+      </div>`;
+    return;
+  }
+
+  if (s === "libre") {
+    card.innerHTML = `
+      <div class="detail-libre">
+        <div class="libre-icon">🏖</div>
+        <div class="libre-title">Libre Festivo</div>
+        <div class="libre-date">${dateStr}</div>
+      </div>`;
+    return;
+  }
+
+  let blocksHTML = s.blocks.map(block => {
+    const col = aColor(block.area);
+    const pct = Math.round((block.horas / 8) * 100);
+    return `
+      <div class="area-block" style="background:${col}15;border:1px solid ${col}40">
+        <div class="ab-dot" style="background:${col};box-shadow:0 0 8px ${col}80"></div>
+        <div class="ab-info">
+          <div class="ab-name" style="color:${col}">${block.area}</div>
+          <div class="ab-bar-row">
+            <div class="ab-bar-track">
+              <div class="ab-bar-fill" style="width:${pct}%;background:${col}"></div>
+            </div>
+            <span class="ab-pct">${block.horas}h · ${pct}%</span>
+          </div>
+        </div>
+      </div>`;
+  }).join('');
+
+  card.innerHTML = `
+    <div class="detail-top">
+      <div class="det-date">${dateStr}</div>
+      <div class="det-horario-row">
+        <span class="det-horario">${s.horario}</span>
+        <span class="det-turno">TURNO ${s.turno}</span>
+      </div>
+    </div>
+    <div class="detail-body">
+      <div class="area-label">Área de trabajo</div>
+      ${blocksHTML}
+    </div>`;
+}
+
+// iOS install banner
+const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+const isStandalone = window.navigator.standalone;
+const inSafari = /safari/i.test(navigator.userAgent) && !/chrome|crios|fxios/i.test(navigator.userAgent);
+if (isIOS && !isStandalone && inSafari) {
+  setTimeout(() => { document.getElementById('installBanner').style.display = 'block'; }, 1500);
+}
+</script>
+</body>
+</html>
