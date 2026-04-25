@@ -118,6 +118,49 @@
   .legend-dot.libre   { background: var(--libre-bg);   border: 1.5px solid #e2e8f0; }
   .legend-dot.lf      { background: var(--lf-bg);      border: 1.5px solid #bbf7d0; }
 
+  /* VIEW TOGGLE */
+  .view-toggle { margin: 0 16px 12px; display: flex; gap: 8px; }
+  .toggle-btn {
+    flex: 1; padding: 10px; border-radius: 10px; border: 1.5px solid var(--border);
+    font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 700;
+    cursor: pointer; transition: all 0.2s; background: var(--surface); color: var(--muted);
+  }
+  .toggle-btn.active {
+    background: linear-gradient(135deg, var(--blue-dark), var(--blue-grad));
+    color: #fff; border-color: transparent;
+    box-shadow: 0 4px 12px rgba(30,58,138,0.25);
+  }
+
+  /* TABLE VIEW */
+  .table-view { margin: 0 16px 24px; display: none; }
+  .table-view.visible { display: block; }
+  .table-wrap { overflow-x: auto; border-radius: 12px; border: 1px solid var(--border); box-shadow: 0 2px 8px rgba(30,58,138,0.08); }
+  table { width: 100%; border-collapse: collapse; background: var(--surface); font-size: 12px; }
+  thead tr { background: linear-gradient(135deg, var(--blue-dark), var(--blue-grad)); }
+  thead th { padding: 10px 8px; text-align: left; font-size: 10px; font-weight: 700; color: rgba(255,255,255,0.9); text-transform: uppercase; letter-spacing: 0.8px; white-space: nowrap; }
+  tbody tr { border-bottom: 1px solid var(--border); transition: background 0.1s; }
+  tbody tr:last-child { border-bottom: none; }
+  tbody tr:active { background: var(--surface2); }
+  tbody td { padding: 9px 8px; vertical-align: middle; }
+  .td-day { font-weight: 700; color: var(--blue-mid); min-width: 28px; }
+  .td-dow { color: var(--muted); font-size: 11px; min-width: 32px; }
+  .td-turno { font-weight: 700; min-width: 40px; }
+  .td-horario { font-size: 11px; color: var(--text); min-width: 90px; }
+  .td-area { color: var(--muted); font-size: 11px; }
+  .td-estado span {
+    padding: 3px 8px; border-radius: 20px; font-size: 10px; font-weight: 700;
+    white-space: nowrap;
+  }
+  .badge-morning { background: var(--morning-bg); color: var(--morning-txt); border: 1px solid var(--morning-bd); }
+  .badge-evening { background: var(--evening-bg); color: var(--evening-txt); border: 1px solid var(--evening-bd); }
+  .badge-libre   { background: #fef2f2; color: var(--red); border: 1px solid #fca5a5; }
+  .badge-lf      { background: #f0fdf4; color: var(--green); border: 1px solid #86efac; }
+  tbody tr.row-libre td { color: var(--red); }
+  tbody tr.row-libre .td-day { color: var(--red); }
+  tbody tr.row-lf .td-day { color: var(--green); }
+  tbody tr.row-today { background: rgba(59,130,246,0.07); }
+  tbody tr.row-today .td-day::after { content: ' ◀'; font-size: 9px; color: var(--blue-grad); }
+
   /* MODAL */
   .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(15,23,42,0.55); z-index: 200; align-items: flex-end; justify-content: center; backdrop-filter: blur(4px); }
   .modal-overlay.open { display: flex; }
@@ -156,17 +199,46 @@
   <div id="todayBanner"></div>
   <div id="nextBanner"></div>
   <div class="stats" id="statsBar"></div>
-  <div class="calendar-wrap">
-    <div class="cal-header">
-      <span>L</span><span>M</span><span>X</span><span>J</span><span>V</span><span>S</span><span>D</span>
-    </div>
-    <div class="cal-grid" id="calGrid"></div>
+
+  <!-- TOGGLE BUTTONS -->
+  <div class="view-toggle">
+    <button class="toggle-btn active" id="btnCal"   onclick="showView('cal')">📅 Calendario</button>
+    <button class="toggle-btn"        id="btnTable" onclick="showView('table')">📋 Tabla de áreas</button>
   </div>
-  <div class="legend">
-    <div class="legend-item"><div class="legend-dot morning"></div>Mañana (07–09h)</div>
-    <div class="legend-item"><div class="legend-dot evening"></div>Tarde (15–16h)</div>
-    <div class="legend-item"><div class="legend-dot lf"></div>Libre Festivo</div>
-    <div class="legend-item"><div class="legend-dot libre"></div>Libre</div>
+
+  <!-- CALENDAR VIEW -->
+  <div id="calView">
+    <div class="calendar-wrap">
+      <div class="cal-header">
+        <span>L</span><span>M</span><span>X</span><span>J</span><span>V</span><span>S</span><span>D</span>
+      </div>
+      <div class="cal-grid" id="calGrid"></div>
+    </div>
+    <div class="legend">
+      <div class="legend-item"><div class="legend-dot morning"></div>Mañana (07–09h)</div>
+      <div class="legend-item"><div class="legend-dot evening"></div>Tarde (15–16h)</div>
+      <div class="legend-item"><div class="legend-dot lf"></div>Libre Festivo</div>
+      <div class="legend-item"><div class="legend-dot libre"></div>Libre</div>
+    </div>
+  </div>
+
+  <!-- TABLE VIEW -->
+  <div class="table-view" id="tableView">
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Día</th>
+            <th>Día</th>
+            <th>Turno</th>
+            <th>Horario</th>
+            <th>Estado</th>
+            <th>Área</th>
+          </tr>
+        </thead>
+        <tbody id="tableBody"></tbody>
+      </table>
+    </div>
   </div>
 </div>
 
@@ -266,6 +338,41 @@
     document.getElementById('uploadSection').style.display='none';
     document.getElementById('mainContent').style.display='block';
     renderAll();
+  }
+
+  function showView(v) {
+    document.getElementById('calView').style.display   = v==='cal'   ? 'block' : 'none';
+    document.getElementById('tableView').style.display = v==='table' ? 'block' : 'none';
+    document.getElementById('btnCal').classList.toggle('active',   v==='cal');
+    document.getElementById('btnTable').classList.toggle('active', v==='table');
+    if (v==='table') renderTable();
+  }
+
+  function renderTable() {
+    const tbody = document.getElementById('tableBody');
+    tbody.innerHTML = '';
+    const today = new Date();
+    const todayDay = (today.getMonth()===calMonth&&today.getFullYear()===calYear) ? today.getDate() : -1;
+    const dim = new Date(calYear, calMonth+1, 0).getDate();
+
+    for (let d=1; d<=dim; d++) {
+      const dd  = getDayData(d);
+      const tipo = dd ? dd.tipo : 'libre';
+      const dow  = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'][new Date(calYear,calMonth,d).getDay()];
+      const isToday = d===todayDay;
+
+      const badgeLabel = tipo==='morning'?'Mañana':tipo==='evening'?'Tarde':tipo==='lf'?'L. Festivo':'Libre';
+      const tr = document.createElement('tr');
+      tr.className = `row-${tipo}${isToday?' row-today':''}`;
+      tr.innerHTML = `
+        <td class="td-day">${d}</td>
+        <td class="td-dow">${dow}</td>
+        <td class="td-turno" style="color:${tipo==='morning'?'var(--morning-txt)':tipo==='evening'?'var(--evening-txt)':tipo==='lf'?'var(--green)':'var(--red)'}">${dd?.turno||'—'}</td>
+        <td class="td-horario">${dd?.horario||'—'}</td>
+        <td class="td-estado"><span class="badge-${tipo}">${badgeLabel}</span></td>
+        <td class="td-area">${dd?.area||'—'}</td>`;
+      tbody.appendChild(tr);
+    }
   }
 
   function getDayData(day) { return calData.find(d=>d.day===day); }
